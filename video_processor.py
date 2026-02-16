@@ -10,6 +10,7 @@ Optimized for CPU speed:
 import os
 import glob
 import tempfile
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Any
 
@@ -17,7 +18,6 @@ import yt_dlp
 import whisper
 import easyocr
 import cv2
-import numpy as np
 
 from utils import get_logger, clean_text, DOWNLOADS_DIR
 
@@ -28,15 +28,19 @@ logger = get_logger("video_processor")
 # ---------------------------------------------------------------------------
 _whisper_model = None
 _ocr_reader = None
+_whisper_lock = threading.Lock()
+_ocr_lock = threading.Lock()
 
 
 def _get_whisper_model():
     """Load Whisper 'tiny' model — fastest, still good for English."""
     global _whisper_model
     if _whisper_model is None:
-        logger.info("Loading Whisper model (tiny) …")
-        _whisper_model = whisper.load_model("tiny")
-        logger.info("Whisper model loaded.")
+        with _whisper_lock:
+            if _whisper_model is None:
+                logger.info("Loading Whisper model (tiny) …")
+                _whisper_model = whisper.load_model("tiny")
+                logger.info("Whisper model loaded.")
     return _whisper_model
 
 
@@ -44,9 +48,11 @@ def _get_ocr_reader():
     """Load EasyOCR English reader."""
     global _ocr_reader
     if _ocr_reader is None:
-        logger.info("Loading EasyOCR reader …")
-        _ocr_reader = easyocr.Reader(["en"], gpu=False)
-        logger.info("EasyOCR reader loaded.")
+        with _ocr_lock:
+            if _ocr_reader is None:
+                logger.info("Loading EasyOCR reader …")
+                _ocr_reader = easyocr.Reader(["en"], gpu=False)
+                logger.info("EasyOCR reader loaded.")
     return _ocr_reader
 
 
@@ -54,17 +60,20 @@ def _get_ocr_reader():
 # 1. Download
 # ---------------------------------------------------------------------------
 
-def download_video(youtube_url: str) -> str:
+def download_video(youtube_url: str, output_dir: str = DOWNLOADS_DIR) -> str:
     """Download a YouTube video as .mp4 (with audio) to the downloads dir."""
     logger.info(f"Downloading video: {youtube_url}")
 
-    output_template = os.path.join(DOWNLOADS_DIR, "%(id)s.%(ext)s")
+    os.makedirs(output_dir, exist_ok=True)
+    output_template = os.path.join(output_dir, "%(id)s.%(ext)s")
     ydl_opts = {
         "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best",
         "merge_output_format": "mp4",
         "outtmpl": output_template,
         "quiet": True,
         "no_warnings": True,
+        "noplaylist": True,
+        "socket_timeout": 30,
         "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
         "http_headers": {
             "User-Agent": (
@@ -84,17 +93,19 @@ def download_video(youtube_url: str) -> str:
         video_id = info.get("id", "video")
 
         # Remove stale files from previous attempts
-        for old in glob.glob(os.path.join(DOWNLOADS_DIR, f"{video_id}.*")):
+        for old in glob.glob(os.path.join(output_dir, f"{video_id}.*")):
             os.remove(old)
 
         ydl.download([youtube_url])
 
-    pattern = os.path.join(DOWNLOADS_DIR, f"{video_id}.*")
+    pattern = os.path.join(output_dir, f"{video_id}.*")
     matches = glob.glob(pattern)
     if not matches:
         raise FileNotFoundError(f"Downloaded file not found for pattern: {pattern}")
 
     video_path = matches[0]
+    if os.path.getsize(video_path) == 0:
+        raise FileNotFoundError(f"Downloaded file is empty: {video_path}")
     logger.info(f"Download complete: {video_path}")
     return video_path
 
@@ -195,25 +206,19 @@ def process_video(youtube_url: str) -> Dict[str, Any]:
     """
     Full pipeline: download → (transcribe + OCR in parallel) → return.
     """
-    video_path = download_video(youtube_url)
+    with tempfile.TemporaryDirectory(dir=DOWNLOADS_DIR) as task_dir:
+        video_path = download_video(youtube_url, output_dir=task_dir)
 
-    # Run Whisper and OCR concurrently — they don't depend on each other
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        whisper_future = pool.submit(transcribe_audio, video_path)
-        ocr_future = pool.submit(extract_onscreen_text, video_path)
+        # Run Whisper and OCR concurrently — they don't depend on each other
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            whisper_future = pool.submit(transcribe_audio, video_path)
+            ocr_future = pool.submit(extract_onscreen_text, video_path)
 
-        transcript = whisper_future.result()
-        ocr_text = ocr_future.result()
-
-    # Clean up
-    try:
-        os.remove(video_path)
-        logger.info("Cleaned up downloaded video file.")
-    except OSError:
-        logger.warning(f"Could not remove temp file: {video_path}")
+            transcript = whisper_future.result()
+            ocr_text = ocr_future.result()
 
     return {
-        "video_path": video_path,
+        "video_path": "cleaned",
         "transcript": transcript,
         "ocr_text": ocr_text,
     }

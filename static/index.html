@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brand Guardian AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       RESET
+    ═══════════════════════════════════════════════════════════ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --black:       #08080a;
+      --black-2:     #0e0e12;
+      --black-3:     #131318;
+      --black-4:     #19191f;
+      --black-5:     #1f1f27;
+      --rule:        #222230;
+      --rule-lit:    #2e2e3d;
+
+      --white:       #eeeef0;
+      --white-2:     #b0b0bc;
+      --white-3:     #6e6e80;
+      --white-4:     #44444f;
+
+      --violet:      #8b5cf6;
+      --violet-dim:  rgba(139,92,246,0.10);
+      --violet-glow: rgba(139,92,246,0.25);
+
+      --teal:        #5eead4;
+      --teal-dim:    rgba(94,234,212,0.07);
+      --teal-med:    rgba(94,234,212,0.15);
+
+      --rose:        #fb7185;
+      --rose-dim:    rgba(251,113,133,0.07);
+      --rose-med:    rgba(251,113,133,0.15);
+
+      --amber:       #fbbf24;
+      --amber-dim:   rgba(251,191,36,0.07);
+
+      --mono: 'JetBrains Mono', 'Consolas', monospace;
+      --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--black);
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ── Subtle grid overlay ────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* Soft radial vignette */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, transparent 0%, var(--black) 72%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ═══════════════════════════════════════════════════════════
+       HERO SECTION
+    ═══════════════════════════════════════════════════════════ */
+    .hero {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 80px 24px 64px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border: 1px solid var(--rule);
+      border-radius: 100px;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: var(--white-3);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--violet);
+      box-shadow: 0 0 8px var(--violet-glow);
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      line-height: 1.05;
+      color: var(--white);
+      margin-bottom: 16px;
+    }
+
+    .hero-sub {
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: var(--white-3);
+      letter-spacing: 0.3px;
+      line-height: 1.6;
+      max-width: 420px;
+      margin: 0 auto 48px;
+    }
+
+    /* ── Input area ─────────────────────────────────────────── */
+    .audit-input {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    .audit-input input {
+      flex: 1;
+      padding: 15px 20px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 400;
+      color: var(--white);
+      background: var(--black-2);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .audit-input input::placeholder { color: var(--white-4); }
+    .audit-input input:focus {
+      border-color: var(--violet);
+      box-shadow: 0 0 0 3px var(--violet-dim), 0 0 24px rgba(139,92,246,0.06);
+    }
+
+    .audit-input button {
+      padding: 15px 32px;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #fff;
+      background: var(--violet);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.15s, box-shadow 0.3s, background 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .audit-input button:hover {
+      background: #9b71ff;
+      box-shadow: 0 4px 28px rgba(139,92,246,0.3);
+      transform: translateY(-1px);
+    }
+    .audit-input button:active { transform: translateY(0) scale(0.98); }
+    .audit-input button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .input-note {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--white-4);
+      margin-top: 14px;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+    .ollama-warn {
+      margin-top: 18px;
+      padding: 12px 16px;
+      font-size: 0.78rem;
+      color: var(--rose);
+      background: var(--rose-dim);
+      border: 1px solid var(--rose-med);
+      border-radius: 8px;
+      text-align: center;
+    }
+    .ollama-warn code { font-family: var(--mono); background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; }
+
+    /* ── Divider ────────────────────────────────────────────── */
+    .divider {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      height: 1px;
+      background: var(--rule);
+      opacity: 0.6;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       LIVE ANALYSIS FEED  (Console Style)
+    ═══════════════════════════════════════════════════════════ */
+    #pipeline { display: none; }
+    #pipeline.active { display: block; animation: fadeIn 0.4s ease; }
+
+    .console-section {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 48px 24px 56px;
+    }
+
+    .console-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .console-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: var(--white-4);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .timer-display {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--violet);
+      letter-spacing: 1px;
+    }
+
+    /* Thin progress track */
+    .progress-track {
+      height: 2px;
+      background: var(--rule);
+      border-radius: 2px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+    .progress-track .bar {
+      height: 100%;
+      width: 0%;
+      background: var(--violet);
+      border-radius: 2px;
+      transition: width 0.6s ease;
+      box-shadow: 0 0 10px var(--violet-glow);
+    }
+
+    /* Feed lines */
+    .feed { display: flex; flex-direction: column; gap: 0; }
+
+    .feed-line {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: opacity 0.3s;
+    }
+    .feed-line:last-child { border-bottom: none; }
+
+    .feed-status {
+      width: 22px;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      text-align: center;
+      flex-shrink: 0;
+      color: var(--white-4);
+      transition: color 0.3s;
+    }
+    .feed-line.done .feed-status   { color: var(--teal); }
+    .feed-line.active .feed-status { color: var(--violet); }
+    .feed-line.error .feed-status  { color: var(--rose); }
+
+    .feed-text {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--white-4);
+      letter-spacing: 0.3px;
+      transition: color 0.3s;
+    }
+    .feed-line.active .feed-text { color: var(--white-2); }
+    .feed-line.done .feed-text   { color: var(--white-3); }
+    .feed-line.error .feed-text  { color: var(--rose); }
+
+    /* Neon accent bar on active */
+    .feed-line.active {
+      position: relative;
+    }
+    .feed-line.active::after {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 20px;
+      background: var(--violet);
+      border-radius: 3px;
+      box-shadow: 0 0 10px var(--violet-glow);
+    }
+
+    /* Pulse for active status icon */
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .feed-line.active .feed-status { animation: pulse 1.2s ease-in-out infinite; }
+
+    /* Typing cursor for active line */
+    .feed-line.active .feed-text::after {
+      content: '|';
+      color: var(--violet);
+      animation: blink 0.8s step-end infinite;
+      margin-left: 2px;
+      font-weight: 300;
+    }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ═══════════════════════════════════════════════════════════
+       AUDIT BRIEF  (Report)
+    ═══════════════════════════════════════════════════════════ */
+    #report { display: none; }
+    #report.active { display: block; animation: briefEnter 0.6s ease; }
+
+    @keyframes briefEnter {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .brief-section {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+    }
+
+    .brief-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: var(--white-4);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    /* ── Compliance Seal ───────────────────────────────────── */
+    .seal-wrap {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .seal {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 24px;
+    }
+    .seal svg { position: absolute; inset: 0; }
+
+    .seal-ring-bg  { fill: none; stroke: var(--rule); stroke-width: 2; }
+    .seal-ring-val  {
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 440.0;  /* 2*pi*70 */
+      stroke-dashoffset: 440.0;
+      transition: stroke-dashoffset 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .seal-inner {
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: box-shadow 0.5s;
+    }
+    .seal-inner .conf-pct {
+      font-family: var(--sans);
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .seal-inner .conf-label {
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      font-weight: 500;
+      color: var(--white-4);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* Pass / Fail states */
+    .seal-wrap.pass .seal-ring-val { stroke: var(--teal); }
+    .seal-wrap.pass .seal-inner {
+      background: var(--teal-dim);
+      box-shadow: 0 0 40px rgba(94,234,212,0.08);
+    }
+    .seal-wrap.pass .conf-pct { color: var(--teal); }
+
+    .seal-wrap.fail .seal-ring-val { stroke: var(--rose); }
+    .seal-wrap.fail .seal-inner {
+      background: var(--rose-dim);
+      box-shadow: 0 0 40px rgba(251,113,133,0.08);
+    }
+    .seal-wrap.fail .conf-pct { color: var(--rose); }
+
+    .verdict-text {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .seal-wrap.pass .verdict-text { color: var(--teal); }
+    .seal-wrap.fail .verdict-text { color: var(--rose); }
+
+    .verdict-tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 5px 18px;
+      border-radius: 100px;
+    }
+    .seal-wrap.pass .verdict-tag { background: var(--teal-dim); color: var(--teal); border: 1px solid var(--teal-med); }
+    .seal-wrap.fail .verdict-tag { background: var(--rose-dim); color: var(--rose); border: 1px solid var(--rose-med); }
+
+    /* ── Metrics strip ─────────────────────────────────────── */
+    .metrics-strip {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      margin-bottom: 56px;
+      padding: 32px 0;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .metric {
+      text-align: center;
+    }
+    .metric-key {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      font-weight: 500;
+      color: var(--white-4);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .metric-val {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    /* Severity badges */
+    .sev-badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 20px;
+      border-radius: 6px;
+    }
+    .sev-low, .sev-none  { color: var(--teal);  background: var(--teal-dim);  border: 1px solid var(--teal-med); }
+    .sev-medium           { color: var(--amber); background: var(--amber-dim); border: 1px solid rgba(251,191,36,0.15); }
+    .sev-high             { color: var(--rose);  background: var(--rose-dim);  border: 1px solid var(--rose-med); }
+
+    /* ── Violated Rules ────────────────────────────────────── */
+    .rules-block {
+      margin-bottom: 48px;
+    }
+    .block-label {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      font-weight: 500;
+      color: var(--white-4);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .rules-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .rules-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 18px;
+      background: var(--black-2);
+      border-radius: 8px;
+      border-left: 2px solid var(--rose);
+      font-size: 0.84rem;
+      line-height: 1.7;
+      color: var(--white-2);
+    }
+    .rules-list li .num {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--rose);
+      min-width: 20px;
+      text-align: center;
+      padding-top: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ── Failure Reasons ───────────────────────────────────── */
+    .reasons-list li { border-left-color: var(--amber); }
+    .reasons-list li .num { color: var(--amber); }
+
+    /* ── Recommendations (How to Fix) ───────────────────────── */
+    .recs-list li {
+      border-left: 2px solid var(--teal);
+      background: var(--teal-dim);
+    }
+    .recs-list li .num { color: var(--teal); }
+
+    /* ── Explanation ────────────────────────────────────────── */
+    .explanation-block {
+      padding: 28px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .explanation-text {
+      font-size: 0.92rem;
+      font-weight: 400;
+      line-height: 1.95;
+      color: var(--white-3);
+      max-width: 580px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       ERROR
+    ═══════════════════════════════════════════════════════════ */
+    #error-box { display: none; }
+    #error-box.active { display: block; animation: fadeIn 0.35s ease; }
+
+    .error-section {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+    .error-content {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: var(--rose);
+      padding: 20px 24px;
+      border: 1px solid rgba(251,113,133,0.12);
+      border-left: 3px solid var(--rose);
+      border-radius: 8px;
+      background: var(--rose-dim);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════════════════════════ */
+    footer {
+      margin-top: auto;
+      text-align: center;
+      padding: 32px 24px;
+    }
+    footer p {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      font-weight: 400;
+      color: var(--white-4);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    footer span { color: var(--white-3); }
+
+    /* ═══════════════════════════════════════════════════════════
+       ANIMATIONS
+    ═══════════════════════════════════════════════════════════ */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════════════════ */
+    @media (max-width: 600px) {
+      .hero { padding: 48px 18px 40px; }
+      .hero h1 { font-size: 1.7rem; }
+      .audit-input { flex-direction: column; }
+      .audit-input button { width: 100%; }
+      .console-section, .brief-section, .error-section { padding-left: 18px; padding-right: 18px; }
+      .metrics-strip { flex-direction: column; gap: 24px; }
+      .feed-line.active::after { left: -18px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Hidden SVG defs -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <linearGradient id="sealGradPass" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#5eead4"/>
+        <stop offset="100%" stop-color="#2dd4bf"/>
+      </linearGradient>
+      <linearGradient id="sealGradFail" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#fb7185"/>
+        <stop offset="100%" stop-color="#f43f5e"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- ═══════════ 1. HERO ═══════════ -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      System Online
+    </div>
+    <h1>Brand Guardian AI</h1>
+    <p class="hero-sub">Automated Multimodal Compliance Intelligence</p>
+
+    <div class="audit-input">
+      <input type="text" id="url-input"
+        placeholder="Paste YouTube URL"
+        spellcheck="false" autocomplete="off" />
+      <button id="audit-btn" onclick="runAudit()">Initiate Audit</button>
+    </div>
+    <p class="input-note">Accepts public YouTube advertisement URLs</p>
+    <div id="ollama-warn" class="ollama-warn" style="display:none;">
+      Ollama is not running. Start it (<code>ollama serve</code>) and run <code>ollama pull mistral</code> so audits can generate reports.
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════ 2. LIVE ANALYSIS FEED ═══════════ -->
+  <div id="pipeline">
+    <section class="console-section">
+      <div class="console-header">
+        <span class="console-label">Live Analysis Feed</span>
+        <span class="timer-display" id="timer">0:00</span>
+      </div>
+      <div class="progress-track"><div class="bar" id="pipeline-fill"></div></div>
+
+      <div class="feed">
+        <div class="feed-line" id="step-1">
+          <span class="feed-status">&middot;</span>
+          <span class="feed-text">Downloading video via yt-dlp</span>
+        </div>
+        <div class="feed-line" id="step-2">
+          <span class="feed-status">&middot;</span>
+          <span class="feed-text">Transcribing audio &mdash; Whisper ASR</span>
+        </div>
+        <div class="feed-line" id="step-3">
+          <span class="feed-status">&middot;</span>
+          <span class="feed-text">Extracting on-screen text &mdash; EasyOCR</span>
+        </div>
+        <div class="feed-line" id="step-4">
+          <span class="feed-status">&middot;</span>
+          <span class="feed-text">Retrieving policy rules &mdash; FAISS</span>
+        </div>
+        <div class="feed-line" id="step-5">
+          <span class="feed-status">&middot;</span>
+          <span class="feed-text">Generating compliance report &mdash; Mistral</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+  </div>
+
+  <!-- ═══════════ 3. AUDIT BRIEF ═══════════ -->
+  <div id="report">
+    <section class="brief-section">
+      <div class="brief-label">Audit Brief</div>
+
+      <!-- Compliance Seal -->
+      <div class="seal-wrap" id="verdict-banner">
+        <div class="seal">
+          <svg viewBox="0 0 160 160" width="160" height="160">
+            <circle class="seal-ring-bg" cx="80" cy="80" r="70" />
+            <circle class="seal-ring-val" id="conf-arc" cx="80" cy="80" r="70"
+              transform="rotate(-90 80 80)" />
+          </svg>
+          <div class="seal-inner">
+            <span class="conf-pct" id="confidence-val">&mdash;</span>
+            <span class="conf-label">Confidence</span>
+          </div>
+        </div>
+        <div class="verdict-text" id="verdict-text"></div>
+        <span class="verdict-tag" id="verdict-badge"></span>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metrics-strip">
+        <div class="metric">
+          <div class="metric-key">Verdict</div>
+          <div class="metric-val" id="verdict-word">&mdash;</div>
+        </div>
+        <div class="metric">
+          <div class="metric-key">Severity</div>
+          <div class="metric-val" id="severity-val">&mdash;</div>
+        </div>
+        <div class="metric">
+          <div class="metric-key">Confidence</div>
+          <div class="metric-val" id="conf-pct-text">&mdash;</div>
+        </div>
+      </div>
+
+      <!-- Violated Rules -->
+      <div class="rules-block" id="rules-section">
+        <div class="block-label">Violated Rules</div>
+        <ul class="rules-list" id="rules-list"></ul>
+      </div>
+
+      <!-- Why It Failed -->
+      <div class="rules-block" id="reasons-section">
+        <div class="block-label">Why It Failed</div>
+        <ul class="rules-list reasons-list" id="reasons-list"></ul>
+      </div>
+
+      <!-- How to Fix -->
+      <div class="rules-block" id="recs-section">
+        <div class="block-label">How to Correct</div>
+        <ul class="rules-list recs-list" id="recs-list"></ul>
+      </div>
+
+      <!-- Explanation -->
+      <div class="explanation-block">
+        <div class="block-label">Analysis Summary</div>
+        <p class="explanation-text" id="explanation-text"></p>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+  </div>
+
+  <!-- ═══════════ ERROR ═══════════ -->
+  <div id="error-box">
+    <section class="error-section">
+      <div class="block-label" style="color:var(--rose);margin-bottom:12px;">System Error</div>
+      <div class="error-content" id="error-text"></div>
+    </section>
+  </div>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer>
+    <p>Powered by <span>Whisper</span> &middot; <span>FAISS</span> &middot; <span>Mistral</span> &middot; Local RAG</p>
+  </footer>
+
+</div><!-- .page -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCRIPT  — all backend logic untouched
+═══════════════════════════════════════════════════════════ -->
+<script>
+  let pollInterval = null;
+  let timerInterval = null;
+  let startTime = 0;
+
+  const STATUS_ICONS = { pending: '\u00b7', active: '\u27f3', done: '\u2713', error: '\u26a0' };
+
+  /* ── Reset ────────────────────────────────────────────── */
+  function resetUI() {
+    document.getElementById('pipeline').classList.remove('active');
+    document.getElementById('report').classList.remove('active');
+    document.getElementById('error-box').classList.remove('active');
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById('step-' + i);
+      el.classList.remove('active', 'done', 'error');
+      el.querySelector('.feed-status').textContent = '\u00b7';
+    }
+    document.getElementById('timer').textContent = '0:00';
+    document.getElementById('pipeline-fill').style.width = '0%';
+    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  /* ── Timer ────────────────────────────────────────────── */
+  function startTimer() {
+    startTime = Date.now();
+    timerInterval = setInterval(() => {
+      const sec = Math.floor((Date.now() - startTime) / 1000);
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      document.getElementById('timer').textContent = m + ':' + String(s).padStart(2, '0');
+    }, 500);
+  }
+
+  /* ── Sync steps with server state ─────────────────────── */
+  function syncSteps(currentStep, status) {
+    const pct = status === 'done' ? 100
+              : status === 'error' ? (currentStep / 5) * 100
+              : ((currentStep - 0.5) / 5) * 100;
+    document.getElementById('pipeline-fill').style.width = Math.min(pct, 100) + '%';
+
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById('step-' + i);
+      const icon = el.querySelector('.feed-status');
+      el.classList.remove('active', 'done', 'error');
+
+      if (status === 'error') {
+        if (i < currentStep)       { el.classList.add('done');   icon.textContent = '\u2713'; }
+        else if (i === currentStep) { el.classList.add('error');  icon.textContent = '\u26a0'; }
+        else                        { icon.textContent = '\u00b7'; }
+      } else if (status === 'done') {
+        el.classList.add('done');
+        icon.textContent = '\u2713';
+      } else {
+        if (i < currentStep)       { el.classList.add('done');   icon.textContent = '\u2713'; }
+        else if (i === currentStep) { el.classList.add('active'); icon.textContent = '\u27f3'; }
+        else                        { icon.textContent = '\u00b7'; }
+      }
+    }
+  }
+
+  /* ── Render final report ──────────────────────────────── */
+  function renderReport(data) {
+    const sealWrap = document.getElementById('verdict-banner');
+    const vText    = document.getElementById('verdict-text');
+    const vBadge   = document.getElementById('verdict-badge');
+    const vWord    = document.getElementById('verdict-word');
+
+    if (data.violation) {
+      sealWrap.className = 'seal-wrap fail';
+      vText.textContent  = 'Violations Detected';
+      vBadge.textContent = 'Non-Compliant';
+      vWord.textContent  = 'FAIL';
+      vWord.style.color  = 'var(--rose)';
+    } else {
+      sealWrap.className = 'seal-wrap pass';
+      vText.textContent  = 'No Violations Found';
+      vBadge.textContent = 'Compliant';
+      vWord.textContent  = 'PASS';
+      vWord.style.color  = 'var(--teal)';
+    }
+
+    /* Severity */
+    const sevEl = document.getElementById('severity-val');
+    const sev   = (data.severity || 'none').toLowerCase();
+    sevEl.innerHTML = '<span class="sev-badge sev-' + sev + '">' + sev.toUpperCase() + '</span>';
+
+    /* Confidence — fill the ring */
+    const confPct = Math.round((data.confidence || 0) * 100);
+    document.getElementById('confidence-val').textContent = confPct + '%';
+    document.getElementById('conf-pct-text').textContent  = confPct + '%';
+    const circumference = 2 * Math.PI * 70;  /* r=70 */
+    const offset = circumference * (1 - (data.confidence || 0));
+    document.getElementById('conf-arc').style.strokeDashoffset = offset;
+
+    /* Rules */
+    const rulesList    = document.getElementById('rules-list');
+    const rulesSection = document.getElementById('rules-section');
+    rulesList.innerHTML = '';
+    if (data.violated_rules && data.violated_rules.length > 0) {
+      rulesSection.style.display = 'block';
+      data.violated_rules.forEach((rule, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = '<span class="num">' + (i + 1) + '.</span><span>' + escapeHtml(rule) + '</span>';
+        rulesList.appendChild(li);
+      });
+    } else {
+      rulesSection.style.display = 'none';
+    }
+
+    /* Why It Failed (failure reasons) */
+    const reasonsList    = document.getElementById('reasons-list');
+    const reasonsSection = document.getElementById('reasons-section');
+    reasonsList.innerHTML = '';
+    const reasons = data.failure_reasons || [];
+    if (data.violation && reasons.length > 0) {
+      reasonsSection.style.display = 'block';
+      reasons.forEach((r, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = '<span class="num">' + (i + 1) + '.</span><span>' + escapeHtml(r) + '</span>';
+        reasonsList.appendChild(li);
+      });
+    } else {
+      reasonsSection.style.display = 'none';
+    }
+
+    /* How to Correct (recommendations) */
+    const recsList    = document.getElementById('recs-list');
+    const recsSection = document.getElementById('recs-section');
+    recsList.innerHTML = '';
+    const recs = data.recommendations || [];
+    if (data.violation && recs.length > 0) {
+      recsSection.style.display = 'block';
+      recs.forEach((r, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = '<span class="num">' + (i + 1) + '.</span><span>' + escapeHtml(r) + '</span>';
+        recsList.appendChild(li);
+      });
+    } else {
+      recsSection.style.display = 'none';
+    }
+
+    /* Explanation */
+    document.getElementById('explanation-text').textContent = data.explanation || 'No explanation provided.';
+    document.getElementById('report').classList.add('active');
+  }
+
+  function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+  }
+
+  /* ── Polling ──────────────────────────────────────────── */
+  function startPolling(taskId) {
+    pollInterval = setInterval(async () => {
+      try {
+        const resp = await fetch('/audit/' + taskId);
+        if (!resp.ok) return;
+        const data = await resp.json();
+
+        syncSteps(data.step, data.status);
+
+        if (data.status === 'done') {
+          clearInterval(pollInterval);  pollInterval  = null;
+          clearInterval(timerInterval); timerInterval = null;
+          const sec = Math.floor(data.elapsed_seconds);
+          const m = Math.floor(sec / 60);
+          const s = sec % 60;
+          document.getElementById('timer').textContent = m + ':' + String(s).padStart(2, '0');
+          setTimeout(() => renderReport(data.result), 400);
+          document.getElementById('audit-btn').disabled = false;
+          document.getElementById('audit-btn').textContent = 'Initiate Audit';
+        }
+
+        if (data.status === 'error') {
+          clearInterval(pollInterval);  pollInterval  = null;
+          clearInterval(timerInterval); timerInterval = null;
+          document.getElementById('error-text').textContent = data.error || 'Unknown error';
+          document.getElementById('error-box').classList.add('active');
+          document.getElementById('audit-btn').disabled = false;
+          document.getElementById('audit-btn').textContent = 'Initiate Audit';
+        }
+      } catch (e) { /* network blip — keep polling */ }
+    }, 2000);
+  }
+
+  /* ── Main action ──────────────────────────────────────── */
+  async function runAudit() {
+    const urlInput = document.getElementById('url-input');
+    const btn      = document.getElementById('audit-btn');
+    const url      = urlInput.value.trim();
+
+    if (!url) {
+      urlInput.focus();
+      urlInput.style.borderColor = 'var(--rose)';
+      setTimeout(() => urlInput.style.borderColor = '', 1500);
+      return;
+    }
+
+    resetUI();
+    btn.disabled = true;
+    btn.textContent = 'Processing\u2026';
+    document.getElementById('pipeline').classList.add('active');
+
+    try {
+      const resp = await fetch('/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ youtube_url: url }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || 'Server error ' + resp.status);
+      }
+
+      const { task_id } = await resp.json();
+      startTimer();
+      startPolling(task_id);
+
+    } catch (err) {
+      document.getElementById('error-text').textContent = err.message;
+      document.getElementById('error-box').classList.add('active');
+      btn.disabled = false;
+      btn.textContent = 'Initiate Audit';
+    }
+  }
+
+  document.getElementById('url-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runAudit();
+  });
+
+  // Show warning if Ollama is not running (audits will fail at report step)
+  fetch('/health').then(r => r.json()).then(data => {
+    if (data.ollama_ready === false) {
+      document.getElementById('ollama-warn').style.display = 'block';
+    }
+  }).catch(() => {});
+</script>
+</body>
+</html>

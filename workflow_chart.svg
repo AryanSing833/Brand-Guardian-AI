@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 580" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <style>
+      .title { font-size: 20px; font-weight: bold; fill: #1a1a2e; }
+      .box { fill: #e8f4f8; stroke: #2d6a7e; stroke-width: 2; rx: 8; }
+      .box-start { fill: #d4edda; stroke: #28a745; }
+      .box-end { fill: #fff3cd; stroke: #ffc107; }
+      .box-parallel { fill: #e2d5f1; stroke: #6f42c1; }
+      .arrow { stroke: #2d6a7e; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .label { font-size: 12px; fill: #333; font-weight: 500; }
+      .sublabel { font-size: 10px; fill: #555; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2d6a7e"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="360" y="32" text-anchor="middle" class="title">Brand Guardian — Compliance Audit Workflow</text>
+
+  <!-- Step 0: User Input -->
+  <rect x="260" y="52" width="200" height="50" class="box box-start"/>
+  <text x="360" y="78" text-anchor="middle" class="label">YouTube URL</text>
+  <text x="360" y="94" text-anchor="middle" class="sublabel">POST /audit → task_id</text>
+
+  <!-- Arrow to Download -->
+  <path d="M 360 102 L 360 125" class="arrow"/>
+  <text x="370" y="118" class="sublabel">1</text>
+
+  <!-- Step 1: Download -->
+  <rect x="260" y="125" width="200" height="50" class="box"/>
+  <text x="360" y="148" text-anchor="middle" class="label">Download Video</text>
+  <text x="360" y="164" text-anchor="middle" class="sublabel">yt-dlp → .mp4 (downloads/)</text>
+
+  <!-- Arrow to parallel branch -->
+  <path d="M 360 175 L 360 200" class="arrow"/>
+  <text x="370" y="192" class="sublabel">2</text>
+
+  <!-- Step 2 & 3: Parallel (Transcribe + OCR) -->
+  <rect x="80" y="200" width="220" height="70" class="box box-parallel"/>
+  <text x="190" y="225" text-anchor="middle" class="label">Whisper</text>
+  <text x="190" y="242" text-anchor="middle" class="sublabel">Transcribe audio</text>
+  <text x="190" y="258" text-anchor="middle" class="sublabel">(tiny model, English)</text>
+
+  <rect x="420" y="200" width="220" height="70" class="box box-parallel"/>
+  <text x="530" y="225" text-anchor="middle" class="label">EasyOCR</text>
+  <text x="530" y="242" text-anchor="middle" class="sublabel">On-screen text</text>
+  <text x="530" y="258" text-anchor="middle" class="sublabel">(every 10s, 640px frames)</text>
+
+  <!-- Arrows from Download to both -->
+  <path d="M 310 200 L 190 200" class="arrow"/>
+  <path d="M 410 200 L 530 200" class="arrow"/>
+  <text x="355" y="195" class="sublabel">parallel</text>
+
+  <!-- Arrows from parallel to merge -->
+  <path d="M 190 270 L 190 305 L 360 305 L 360 325" class="arrow"/>
+  <path d="M 530 270 L 530 305 L 360 305" class="arrow"/>
+
+  <!-- Merge point label -->
+  <text x="360" y="320" text-anchor="middle" class="sublabel">transcript + ocr_text</text>
+
+  <!-- Step 4: FAISS Retrieval -->
+  <rect x="260" y="325" width="200" height="55" class="box"/>
+  <text x="360" y="348" text-anchor="middle" class="label">Knowledge Base (FAISS)</text>
+  <text x="360" y="364" text-anchor="middle" class="sublabel">Query = transcript + OCR → top-k rules</text>
+  <text x="360" y="378" text-anchor="middle" class="sublabel">(sentence-transformers + PDF chunks)</text>
+
+  <path d="M 360 380 L 360 405" class="arrow"/>
+  <text x="370" y="398" class="sublabel">4</text>
+
+  <!-- Step 5: LLM Report -->
+  <rect x="260" y="405" width="200" height="55" class="box"/>
+  <text x="360" y="428" text-anchor="middle" class="label">Ollama (Mistral)</text>
+  <text x="360" y="444" text-anchor="middle" class="sublabel">Prompt: transcript + OCR + rules</text>
+  <text x="360" y="458" text-anchor="middle" class="sublabel">→ JSON verdict (violation, severity, confidence)</text>
+
+  <path d="M 360 460 L 360 490" class="arrow"/>
+  <text x="370" y="483" class="sublabel">5</text>
+
+  <!-- Done -->
+  <rect x="260" y="490" width="200" height="50" class="box box-end"/>
+  <text x="360" y="517" text-anchor="middle" class="label">Compliance Report</text>
+  <text x="360" y="533" text-anchor="middle" class="sublabel">GET /audit/{task_id} → result</text>
+
+  <!-- Startup (side) -->
+  <rect x="520" y="52" width="180" height="90" class="box" stroke="#6c757d" fill="#f8f9fa"/>
+  <text x="610" y="75" text-anchor="middle" class="label">At startup</text>
+  <text x="610" y="92" text-anchor="middle" class="sublabel">Load PDFs → chunk</text>
+  <text x="610" y="108" text-anchor="middle" class="sublabel">→ embed (MiniLM)</text>
+  <text x="610" y="124" text-anchor="middle" class="sublabel">→ build FAISS index</text>
+  <text x="610" y="138" text-anchor="middle" class="sublabel">(knowledge_base/)</text>
+</svg>

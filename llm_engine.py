@@ -1,8 +1,9 @@
 import json
 import re
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Literal
 
 import requests
+from pydantic import BaseModel, ValidationError, Field
 
 from utils import get_logger
 
@@ -13,6 +14,19 @@ logger = get_logger("llm_engine")
 # ---------------------------------------------------------------------------
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "mistral"
+OLLAMA_TIMEOUT_SECONDS = 300
+
+_http_session = requests.Session()
+
+
+class ComplianceReport(BaseModel):
+    violation: bool = False
+    violated_rules: List[str] = Field(default_factory=list)
+    failure_reasons: List[str] = Field(default_factory=list)
+    recommendations: List[str] = Field(default_factory=list)
+    explanation: str = "No explanation provided."
+    severity: Literal["low", "medium", "high", "none"] = "none"
+    confidence: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -109,23 +123,22 @@ def _call_ollama(prompt: str) -> str:
         "system": SYSTEM_PROMPT,
         "stream": False,
         "options": {
-            "temperature": 0.1,       # Low temp for deterministic output
-            "num_predict": 3072,      # Max tokens (room for reasons + recommendations)
+            "temperature": 0.1,
+            "num_predict": 1536,
         },
     }
 
     logger.info(f"Calling Ollama ({OLLAMA_MODEL}) …")
     try:
-        resp = requests.post(OLLAMA_URL, json=payload, timeout=300)
+        resp = _http_session.post(OLLAMA_URL, json=payload, timeout=OLLAMA_TIMEOUT_SECONDS)
     except requests.ConnectionError:
         raise RuntimeError(
             "Cannot reach Ollama at http://localhost:11434. "
             "Ensure Ollama is running (`ollama serve`) and the mistral model is pulled."
         )
     except requests.Timeout:
-        raise RuntimeError("Ollama request timed out (300 s). The model may be overloaded.")
+        raise RuntimeError(f"Ollama request timed out ({OLLAMA_TIMEOUT_SECONDS} s). The model may be overloaded.")
 
-    # Handle HTTP errors from Ollama (e.g. CUDA crash, OOM, model issues)
     if resp.status_code != 200:
         try:
             err_body = resp.json()
@@ -153,19 +166,16 @@ def _parse_llm_response(raw: str) -> Dict[str, Any]:
 
     Handles common quirks: markdown code fences, leading/trailing junk.
     """
-    # Strip markdown code fences if present
     cleaned = raw.strip()
     fence_match = re.search(r"```(?:json)?\s*(.*?)```", cleaned, re.DOTALL)
     if fence_match:
         cleaned = fence_match.group(1).strip()
 
-    # Try direct JSON parse
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
         pass
 
-    # Fallback: find first { … } block
     brace_match = re.search(r"\{.*\}", cleaned, re.DOTALL)
     if brace_match:
         try:
@@ -173,29 +183,37 @@ def _parse_llm_response(raw: str) -> Dict[str, Any]:
         except json.JSONDecodeError:
             pass
 
-    # Fallback: handle truncated JSON (missing closing brace)
     brace_start = cleaned.find("{")
     if brace_start != -1:
         fragment = cleaned[brace_start:]
-        # Count unmatched braces and close them
         open_braces = fragment.count("{") - fragment.count("}")
-        repaired = fragment + "}" * open_braces
+        repaired = fragment + "}" * max(0, open_braces)
         try:
             return json.loads(repaired)
         except json.JSONDecodeError:
             pass
 
-    # If all parsing fails, return a safe fallback
-    logger.warning("Could not parse LLM response as JSON. Returning raw text as explanation.")
-    return {
-        "violation": False,
-        "violated_rules": [],
-        "failure_reasons": [],
-        "recommendations": [],
-        "explanation": f"LLM output could not be parsed: {raw[:500]}",
-        "severity": "low",
-        "confidence": 0.0,
-    }
+    raise ValueError("Could not parse LLM response as JSON")
+
+
+def _validate_report(report: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate and normalize report shape."""
+    # Normalize fields that often drift in model output.
+    for key in ("failure_reasons", "recommendations", "violated_rules"):
+        value = report.get(key)
+        if isinstance(value, str) and value.strip():
+            report[key] = [value]
+        elif not isinstance(value, list):
+            report[key] = []
+
+    try:
+        report["confidence"] = float(report.get("confidence", 0.0))
+    except (TypeError, ValueError):
+        report["confidence"] = 0.0
+    report["confidence"] = max(0.0, min(1.0, report["confidence"]))
+
+    validated = ComplianceReport.model_validate(report)
+    return validated.model_dump()
 
 
 # ---------------------------------------------------------------------------
@@ -209,51 +227,38 @@ def generate_compliance_report(
 ) -> Dict[str, Any]:
     """
     Generate a structured compliance report by prompting the local Mistral model.
-
-    Args:
-        transcript:      Speech-to-text output from the video.
-        ocr_text:        List of on-screen text segments.
-        retrieved_rules: Relevant policy chunks from the knowledge base.
-
-    Returns:
-        Dict matching the compliance report schema:
-        {
-            "violation": bool,
-            "violated_rules": [...],
-            "explanation": str,
-            "severity": "low" | "medium" | "high",
-            "confidence": float
-        }
     """
     user_prompt = _build_user_prompt(transcript, ocr_text, retrieved_rules)
-    raw_response = _call_ollama(user_prompt)
-    logger.info(f"Raw LLM response ({len(raw_response)} chars) received.")
 
-    report = _parse_llm_response(raw_response)
+    for attempt in range(2):
+        prompt = user_prompt
+        if attempt == 1:
+            prompt = (
+                user_prompt
+                + "\n\nIMPORTANT: Your previous output was invalid. Return only one valid JSON object with all required fields."
+            )
 
-    # Enforce schema defaults for any missing keys
-    report.setdefault("violation", False)
-    report.setdefault("violated_rules", [])
-    report.setdefault("failure_reasons", [])
-    report.setdefault("recommendations", [])
-    report.setdefault("explanation", "No explanation provided.")
-    report.setdefault("severity", "low")
-    report.setdefault("confidence", 0.0)
+        raw_response = _call_ollama(prompt)
+        logger.info(f"Raw LLM response ({len(raw_response)} chars) received.")
 
-    # Normalize failure_reasons and recommendations to lists (LLM may return string)
-    for key in ("failure_reasons", "recommendations"):
-        val = report[key]
-        if isinstance(val, str) and val.strip():
-            report[key] = [val]
-        elif not isinstance(val, list):
-            report[key] = []
+        try:
+            parsed = _parse_llm_response(raw_response)
+            report = _validate_report(parsed)
+            logger.info(
+                f"Verdict: violation={report['violation']}, "
+                f"severity={report['severity']}, "
+                f"confidence={report['confidence']:.2f}"
+            )
+            return report
+        except (ValueError, ValidationError) as exc:
+            logger.warning(f"LLM response validation failed (attempt {attempt + 1}/2): {exc}")
 
-    # Clamp confidence to [0, 1]
-    report["confidence"] = max(0.0, min(1.0, float(report["confidence"])))
-
-    logger.info(
-        f"Verdict: violation={report['violation']}, "
-        f"severity={report['severity']}, "
-        f"confidence={report['confidence']:.2f}"
-    )
-    return report
+    return {
+        "violation": False,
+        "violated_rules": [],
+        "failure_reasons": [],
+        "recommendations": [],
+        "explanation": "LLM output could not be parsed into the required schema.",
+        "severity": "none",
+        "confidence": 0.0,
+    }

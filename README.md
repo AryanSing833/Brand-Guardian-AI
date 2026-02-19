@@ -23,20 +23,22 @@
 
 **Brand Guardian AI** is a fully local, end-to-end video advertisement compliance auditing system.
 
-It automatically analyzes YouTube advertisements, extracts speech and on-screen text, retrieves relevant regulatory policies using Retrieval-Augmented Generation (RAG), and generates structured compliance verdicts using a transformer-based LLM.
+It analyzes YouTube advertisements, extracts speech and on-screen text, retrieves relevant regulatory policies using Retrieval-Augmented Generation (RAG), and generates structured compliance verdicts using a transformer-based LLM.
 
-> ✅ No Azure  
 > ✅ No cloud APIs  
+> ✅ No external LLM providers  
 > ✅ Fully local execution  
 
-When an ad fails compliance, the system provides:
-- **Why it failed** — Specific violation reasons  
-- **How to fix it** — Clear, actionable recommendations  
+When an advertisement fails compliance, the system provides:
+
+- **Violation Reasons** — Specific policy breaches identified  
+- **Corrective Guidance** — Clear, actionable recommendations  
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ System Architecture
 
+```text
 ┌────────────┐
 │    User    │
 └─────┬──────┘
@@ -64,13 +66,13 @@ When an ad fails compliance, the system provides:
       ▼
 ┌─────────────────────────────┐
 │ Structured Text Builder     │
-│ (Merge Transcript + OCR)    │
+│ (Transcript + OCR Merge)    │
 └─────┬───────────────────────┘
       │
       ▼
 ┌─────────────────────────────┐
 │ Chunking Engine             │
-│ 1000 chars                  │
+│ 1000 characters             │
 │ 200 overlap                 │
 └─────┬───────────────────────┘
       │
@@ -82,16 +84,15 @@ When an ad fails compliance, the system provides:
       │
       ▼
 ┌─────────────────────────────┐
-│ Vector Store                │
-│ FAISS                       │
-│ (Top-3 Retrieval)           │
+│ FAISS Vector Store          │
+│ Top-3 Similarity Retrieval  │
 └─────┬───────────────────────┘
       │
       ▼
 ┌─────────────────────────────┐
 │ LLM Reasoning Layer         │
-│ Ollama / Mistral            │
-│ → Compliance Verdict (JSON) │
+│ Mistral (Ollama)            │
+│ → JSON Compliance Verdict   │
 └─────────────────────────────┘
 
 

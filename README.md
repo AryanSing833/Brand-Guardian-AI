@@ -37,8 +37,7 @@ When an ad fails compliance, the system provides:
 
 ## 🏗️ Architecture
 
-User → FastAPI → YouTube URL
-
+User → FastAPI → YouTube URL \n
 ↓
 Download Video (yt-dlp)
 ↓

@@ -112,6 +112,7 @@ When an advertisement fails compliance, the system provides:
 
 ---
 
+```text
 ## 📁 Project Structure
 
 Brand_Guardian/
@@ -129,7 +130,7 @@ Brand_Guardian/
 ├── knowledge_base/
 │ └── (Place compliance PDFs here)
 └── downloads/
-
+```
 
 ---
 

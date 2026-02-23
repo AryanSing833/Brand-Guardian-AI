@@ -1,0 +1,5 @@
+# For Streamlit UI only (frontend to Brand Guardian API).
+# Use this when deploying the Streamlit app on Streamlit Community Cloud.
+# The FastAPI backend must be running elsewhere (e.g. Render, Railway) or locally.
+streamlit>=1.28.0
+requests>=2.31.0

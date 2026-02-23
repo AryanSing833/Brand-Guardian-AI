@@ -20,7 +20,7 @@ if not exist ".venv" (
 
 echo [2/4] Activating venv and installing dependencies...
 call .venv\Scripts\activate.bat
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 if errorlevel 1 (
     echo ERROR: pip install failed.
     pause
